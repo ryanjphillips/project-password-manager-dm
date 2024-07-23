@@ -287,7 +287,22 @@ class PasswordManager:
     Post-conditions: none
     """
     def shortcut_key_strength(self):
-        pass
+        
+        # Always 5 keys. Pressed at the same time. 
+        # Adding another 5 keys which are pressed after the first group.
+        # The length of the shortcut key is the number of 5-key combo presses, not the total number of keys involed.
+        # Keys can appear in mulitple combo presses, but not twice in the same combo press.
+        # length of 5. Can't repeat. 26(a-zA-z) + Special(8) + 10 (0-9)
+        # 44
+        # 44!/(44-5)!
+
+        denominator = 44 - 5 
+        factorialNum = self.calc_factorial(44)
+        factorialDen = self.calc_factorial(denominator)
+        validPass = factorialNum / factorialDen
+        print("Number of possible valid shortcut keys given, duplicates not allowed: " + str(validPass))
+        print("Probability of Uniform Random Guess against the current: " + str(1.0/validPass))
+
     def session(self):
         if self.password == None:
             print("\nYou do not have a password set")
