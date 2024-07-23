@@ -204,6 +204,8 @@ class PasswordManager:
         # Number of valid scrambles, supposing no duplicates.
         if not self.requirements['duplicate_char_allowed']:
           print("Number of possible scrambles, without duplicates" + str(lenFactorial))
+          prob = (1.0/float(lenFactorial)) * 100
+          print("Probability of guessing the old password: " + str(prob) + " %") 
 
         # Different Forumula with duplicates n! / n!...k!
         else:
@@ -216,7 +218,15 @@ class PasswordManager:
             
           finalCalc = lenFactorial / bottomFinal
           formatted_number = f"{finalCalc:.0f}"
-          print("Number of possible scrambles, with duplicates:" + str(formatted_number))
+          print("Number of possible scrambles, with duplicates: " + str(formatted_number))
+          prob = (1.0/float(formatted_number)) * 100
+          print("Probability of guessing the old password: " + str(prob) + " %") 
+
+        # Ask if the user wants to scramble the password.
+        passwordList = list(self.password)
+        random.shuffle(passwordList) if input("Shuffle the password. (y/n)") == "y" else print("Declined Shuffle")
+        self.password = "".join(passwordList)
+        print(self.password)
 
     def calc_factorial(self, size):
         finalnumber = 1
@@ -233,7 +243,6 @@ class PasswordManager:
                 counts[char] += 1
             else:
               counts[char] = 1
-        print(counts)
         return counts
 
     """
