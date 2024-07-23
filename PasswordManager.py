@@ -67,8 +67,11 @@ class PasswordManager:
     """
     def password_strength(self):
 
-        if (current
-        pass
+        # Pre-condition to check the existence of the password. Sort've redundant, but just in case.
+
+        if (self.password == None):
+          print("\nYou do not have a password set")
+          return
 
     """
     Purpose: to generate a new valid password
@@ -78,7 +81,94 @@ class PasswordManager:
     Post-conditions: self.password contains a new, randomly generated password that follows self.requirements
     """
     def new_random_password(self):
-        pass
+
+        # List of Valid Characters and Numbers
+        number_list = ['0','1','2','3','4','5','6','7','8','9']
+        lowerCase_list = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z']
+        upperCase_list = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z']
+        special_list= ['!','@', '#', '$', '%', '^', '&','*']
+
+        # Final List
+        new_password = []
+
+        # Generate Random Length Between the Min and Max
+        randomLength = random.randint(int(self.requirements['min_length']), int(self.requirements['max_length']))
+
+        # Number of requirements added
+        added = 0
+
+        # Ensure that there is the requirements are in the password
+        if self.requirements['uppercase_required'] and added <= randomLength:
+          randomItem = random.choice(upperCase_list)
+          new_password.append(randomItem)
+          added += 1
+
+          if not self.requirements['duplicate_char_allowed']:
+            upperCase_list.remove(randomItem) 
+
+        if self.requirements['lowercase_required'] and added <= randomLength:
+          randomItem = random.choice(lowerCase_list)
+          new_password.append(randomItem)
+          added += 1
+
+          if not self.requirements['duplicate_char_allowed']:
+            lowerCase_list.remove(randomItem) 
+
+        if self.requirements['number_required'] and added <= randomLength:
+          randomItem = random.choice(number_list)
+          new_password.append(randomItem)
+          added += 1
+
+          if not self.requirements['duplicate_char_allowed']:
+            number_list.remove(randomItem) 
+
+        # Subtract any that were added
+        print ("Random Length: " + str(randomLength))
+        randomLength = randomLength - added
+
+        # Define new sets
+        newSet = number_list + lowerCase_list + upperCase_list
+        newSetWithSpecial = number_list + lowerCase_list + upperCase_list + special_list
+
+        i = 0
+        # Loop to length of min and max of new password
+        print ("Added Length: " + str(added))
+        print ("Difference " + str(randomLength))
+
+        # There is a maximum based on the amount of passwords that can be generated.
+        while i < randomLength:
+          if len(newSet) <= 0 or len(newSetWithSpecial) <= 0:
+            print('Without Duplicates the max password is 70. If you want longer please consider allowing duplicates.')
+
+            # Exit Loop
+            i = randomLength
+
+
+          elif self.requirements['special_char_allowed']:
+            randomItem = random.choice(newSetWithSpecial)
+            new_password.append(randomItem)
+
+            if not self.requirements['duplicate_char_allowed']:
+              newSetWithSpecial.remove(randomItem) 
+
+          else:
+
+            # I am supposing that A and a are different characters are not duplicates.
+
+            randomItem = random.choice(newSet)
+            new_password.append(randomItem)
+            if not self.requirements['duplicate_char_allowed']:
+              newSet.remove(randomItem) 
+
+          # Increment Loop
+          i = i + 1
+
+        # List to string
+        self.password = "".join(new_password)
+        
+        # Delete Later
+        print(self.password)
+        print(len(self.password))
 
     """
     Purpose: to compute the likelihood of randomly guessing a scrambled password. Helper to scramble_password()
@@ -117,7 +207,6 @@ class PasswordManager:
     """
     def shortcut_key_strength(self):
         pass
-
     def session(self):
         if self.password == None:
             print("\nYou do not have a password set")
