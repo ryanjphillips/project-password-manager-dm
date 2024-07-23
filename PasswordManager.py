@@ -191,7 +191,50 @@ class PasswordManager:
     Post-conditions: self.password changed if user confirms, otherwise nothing happens
     """
     def scramble_password(self):
-        pass
+
+        # Check for an unset pass
+        if self.password == None:
+            print("\nYou do not have a password set")
+            return
+
+        # Length of Password
+        length = len(self.password)
+        lenFactorial = self.calc_factorial(length)
+
+        # Number of valid scrambles, supposing no duplicates.
+        if not self.requirements['duplicate_char_allowed']:
+          print("Number of possible scrambles, without duplicates" + str(lenFactorial))
+
+        # Different Forumula with duplicates n! / n!...k!
+        else:
+          duplicateDict = self.calc_duplicates()
+          bottomFinal = 1
+
+          for char, count in duplicateDict.items():
+            bottomFinal *= self.calc_factorial(count)
+
+            
+          finalCalc = lenFactorial / bottomFinal
+          formatted_number = f"{finalCalc:.0f}"
+          print("Number of possible scrambles, with duplicates:" + str(formatted_number))
+
+    def calc_factorial(self, size):
+        finalnumber = 1
+        for i in range(size, 0, -1):
+          finalnumber *= i
+        return finalnumber 
+
+    def calc_duplicates(self):
+        sorted_string = ''.join(sorted(self.password))
+
+        counts = {}
+        for char in sorted_string:
+            if char in counts:
+                counts[char] += 1
+            else:
+              counts[char] = 1
+        print(counts)
+        return counts
 
     """
     Purpose: to compute the likelihood of randomly guessing the current shortcut key
