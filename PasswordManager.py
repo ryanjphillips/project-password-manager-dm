@@ -67,12 +67,35 @@ class PasswordManager:
     """
     def password_strength(self):
 
-        # Pre-condition to check the existence of the password. Sort've redundant, but just in case.
+        # Pre-condition to check the existence of the password. 
 
         if (self.password == None):
           print("\nYou do not have a password set")
           return
+        
+        # Each Character can be 26 (a-z) + 26 (A-z) + 8 (special) + 10 (0-9) = 70
+        # For duplicates -> 70! or length!
+        # The Length is current length of the password (but is generated from a min, max at rando)
+        # 70^length
 
+        passLength = len(self.password)
+
+        if self.requirements['duplicate_char_allowed']:
+            value = 70 ** passLength
+            print("Number of possible valid passwords given requirements:, duplicates allowed: " + str(value))
+            print("Probability of Uniform Random Guess: " + str(1.0/value))
+
+        # 70! / (70 - L)!
+        else:
+
+            denominator = 70 - len(self.password)
+            factorialNum = self.calc_factorial(70)
+            factorialDen = self.calc_factorial(denominator)
+            validPass = factorialNum / factorialDen
+            print("Number of possible valid passwords given, duplicates not allowed: " + str(validPass))
+            print("Probability of Uniform Random Guess: " + str(1.0/validPass))
+
+        
     """
     Purpose: to generate a new valid password
     Returns: nothing
@@ -178,7 +201,13 @@ class PasswordManager:
     Post-conditions: none
     """
     def scramble_strength(self):
-        pass
+
+        # Check for an unset pass
+        if self.password == None:
+            print("\nYou do not have a password set")
+            return
+
+
 
     """
     Purpose: to re-arrange the characters of the existing password
