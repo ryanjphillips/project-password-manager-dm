@@ -1,8 +1,16 @@
+# Ryan Phillips
+
+# Environment:
+# Python3.10
+# Linux Minit 21.1
+
+# Notes:
+# Adjusted the requirements for min and max length passwords in the generate function to be between 3,128. A and a are not considered duplicates.
+
 import random
 
 class PasswordManager:
     def __init__(self):
-        
         self.password = None
         self.requirements = {'min_length': 1, 'max_length': 24, 'special_char_allowed': False, 'duplicate_char_allowed': True, 'lowercase_required': False, 'uppercase_required': False, 'number_required': False, 'special_char_required': False}
         self.shortcut_key = None
@@ -11,10 +19,8 @@ class PasswordManager:
     def configure_requirements(self):
         self.requirements['min_length'] = input("Please enter the minimum password length (inclusive): ")
         self.requirements['max_length'] = input("Please enter the maximum password length (inclusive): ")
-
         self.requirements['special_char_allowed'] = True if input("Are special characters (!@#$%^&*) allowed? (y/n): ") == "y" else False
         self.requirements['duplicate_char_allowed'] = True if input("Are duplicate characters allowed? (y/n): ") == "y" else False
-
         self.requirements['lowercase_required'] = True if input("Is a lowercase letter (a-z) required? (y/n): ") == "y" else False
         self.requirements['uppercase_required'] = True if input("Is an uppercase letter (A-Z) required? (y/n): ") == "y" else False
         self.requirements['number_required'] = True if input("Is a number (0-9) required? (y/n): ") == "y" else False
@@ -50,6 +56,7 @@ class PasswordManager:
     Pre-conditions: none
     Post-conditions: none
     """
+
     def valid_characters(self):
         valid_chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
         if self.requirements['special_char_allowed']:
@@ -65,37 +72,77 @@ class PasswordManager:
     Pre-conditions: self.password != None
     Post-conditions: none
     """
+
     def password_strength(self):
 
         # Pre-condition to check the existence of the password. 
-
         if (self.password == None):
           print("\nYou do not have a password set")
           return
         
-        # Each Character can be 26 (a-z) + 26 (A-z) + 8 (special) + 10 (0-9) = 70
-        # For duplicates -> 70! or length!
-        # The Length is current length of the password (but is generated from a min, max at rando)
-        # 70^length
+        # If specials are allowed the total character count is 26 (a-z) + 26 (A-z) + 8 (special) + 10 (0-9) = 70
+        # If specials are not allowed the total character count is 70 - 8 = 62
+        # If the first three are required and special is requiredyou will do 26 x 26 x 10 x 67! x 66! ..... n! (67 choose n) n is the remaining of the password
+        # OR 
+        # If the first three are required and special is not allowed you will do 26 x 26 x 10 x (62 choose n) where n is the remaining lenght of the password
 
-        passLength = len(self.password)
+        # Check if the required fields are required, if so that will change the amount of characters avalible for the first 3 characters. 
+        firstCharacter = 1
+        secondCharacter = 1
+        thirdCharacter = 1
 
-        if self.requirements['duplicate_char_allowed']:
-            value = 70 ** passLength
-            print("Number of possible valid passwords given requirements:, duplicates allowed: " + str(value))
-            print("Probability of Uniform Random Guess: " + str(1.0/value))
+        # Calculate the total number of characters if a lower case, uppercase, or number is selected. For each a the number of possible characters decreases by 1. 
+        added = 0
 
-        # 70! / (70 - L)!
+        if self.requirements['lowercase_required']:
+            firstCharacter = 26
+            added += 1
+        if self.requirements['uppercase_required']:
+            secondCharacter = 26
+            added += 1
+        if self.requirements['number_required']:
+            thirdCharacter = 10
+            added += 1
+
+        characterLength = 70
+        # Total Char set is 8 less
+        if self.requirements['special_char_allowed'] == False:
+
+            characterLength = 62
+        else:
+            charcterLength = 70
+
+        # Accounting for the remaining to be unique
+        if not self.requirements['duplicate_char_allowed']:
+
+            # n!/k!x(n-k)!
+            passLength = len(self.password)
+            passLength = passLength - added 
+            characterLength = characterLength - added
+
+            difference = characterLength - passLength
+            factOne = self.calc_factorial(passLength)
+            factTwo = self.calc_factorial(difference)
+
+
+            numerator = self.calc_factorial(characterLength)
+            denominator = factOne * factTwo
+
+            finalCalc = firstCharacter * secondCharacter * thirdCharacter * (numerator/denominator)
+            print("Number of possible valid passwords given requirements, uniquely: " + str(finalCalc))
+            print("Probability of Uniform Random Guess: " + str((1.0/finalCalc) * 100) + "%")
+
         else:
 
-            denominator = 70 - len(self.password)
-            factorialNum = self.calc_factorial(70)
-            factorialDen = self.calc_factorial(denominator)
-            validPass = factorialNum / factorialDen
-            print("Number of possible valid passwords given, duplicates not allowed: " + str(validPass))
-            print("Probability of Uniform Random Guess: " + str(1.0/validPass))
+            passLength = len(self.password)
+            duplicatesAllowed = firstCharacter * secondCharacter * thirdCharacter * (characterLength ** (passLength - added))
 
-        
+            # Final Result
+            print("Number of possible valid passwords given, duplicates allowed: " + str(duplicatesAllowed))
+            print("Probability of Uniform Random Guess: " + str((1.0/duplicatesAllowed) * 100) + "%")
+
+        return 
+
     """
     Purpose: to generate a new valid password
     Returns: nothing
@@ -104,7 +151,23 @@ class PasswordManager:
     Post-conditions: self.password contains a new, randomly generated password that follows self.requirements
     """
     def new_random_password(self):
+        
+        # Check Here for Passowrds that are less than three, otherwise it doesn't really make sense. 
+        # This would probably make more sense in the requirements function, but I did not want to touch the function.
 
+        if int(self.requirements['min_length']) < 3 or int(self.requirements['max_length']) < 3:
+            print("Please enter a password that is length of 3 or greater.")
+            self.password = None
+            return
+
+        # Check Here for Passowrds that are greater than 128. This is based off of my own Password Manager KeyPassXC's own Password Generator max length.
+        # This would probably make more sense in the requirements function, but I did not want to touch the function.
+        if int(self.requirements['min_length']) > 128 or int(self.requirements['max_length']) > 128:
+            print("Please enter a password that is length of 128 or less.")
+            self.password = None
+            return
+
+        # I am supposing that A and a are different characters are not duplicates.
         # List of Valid Characters and Numbers
         number_list = ['0','1','2','3','4','5','6','7','8','9']
         lowerCase_list = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z']
@@ -121,6 +184,7 @@ class PasswordManager:
         added = 0
 
         # Ensure that there is the requirements are in the password
+
         if self.requirements['uppercase_required'] and added <= randomLength:
           randomItem = random.choice(upperCase_list)
           new_password.append(randomItem)
@@ -145,8 +209,7 @@ class PasswordManager:
           if not self.requirements['duplicate_char_allowed']:
             number_list.remove(randomItem) 
 
-        # Subtract any that were added
-        print ("Random Length: " + str(randomLength))
+        # Subtract any that were added to the length
         randomLength = randomLength - added
 
         # Define new sets
@@ -155,17 +218,14 @@ class PasswordManager:
 
         i = 0
         # Loop to length of min and max of new password
-        print ("Added Length: " + str(added))
-        print ("Difference " + str(randomLength))
 
         # There is a maximum based on the amount of passwords that can be generated.
-        while i < randomLength:
+        while (i < randomLength):
           if len(newSet) <= 0 or len(newSetWithSpecial) <= 0:
             print('Without Duplicates the max password is 70. If you want longer please consider allowing duplicates.')
 
             # Exit Loop
             i = randomLength
-
 
           elif self.requirements['special_char_allowed']:
             randomItem = random.choice(newSetWithSpecial)
@@ -189,9 +249,6 @@ class PasswordManager:
         # List to string
         self.password = "".join(new_password)
         
-        # Delete Later
-        print(self.password)
-        print(len(self.password))
 
     """
     Purpose: to compute the likelihood of randomly guessing a scrambled password. Helper to scramble_password()
@@ -207,7 +264,33 @@ class PasswordManager:
             print("\nYou do not have a password set")
             return
 
+        # Length of Password
+        length = len(self.password)
 
+        # For Scambling the Password (that is already generated), assuming no duplicates,
+        # we do not need to care about any specific requirements for the first three as
+        # as we are just rearranging the generated password in all possible orders. 
+
+        lenFactorial = self.calc_factorial(length)
+
+        # Number of valid scrambles, supposing no duplicates.
+        if not self.requirements['duplicate_char_allowed']:
+            return lenFactorial
+
+        # For scrambles with duplicates we are going to need a different Forumula.
+        # n!/n1!*n2!*...nk!
+        # This will account for some items being the same, as you cannot distinguish when you switch the A in ABC and ACB around. 
+        
+        else:
+          duplicateDict = self.calc_duplicates()
+          bottomFinal = 1
+
+          for char, count in duplicateDict.items():
+            bottomFinal *= self.calc_factorial(count)
+            
+          finalCalc = lenFactorial / bottomFinal
+
+        return finalCalc
 
     """
     Purpose: to re-arrange the characters of the existing password
@@ -228,11 +311,11 @@ class PasswordManager:
 
         # Length of Password
         length = len(self.password)
-        lenFactorial = self.calc_factorial(length)
+        lenFactorial = self.scramble_strength()
 
         # Number of valid scrambles, supposing no duplicates.
         if not self.requirements['duplicate_char_allowed']:
-          print("Number of possible scrambles, without duplicates" + str(lenFactorial))
+          print("Number of possible scrambles, without duplicates. " + str(lenFactorial))
           prob = (1.0/float(lenFactorial)) * 100
           print("Probability of guessing the old password: " + str(prob) + " %") 
 
@@ -244,8 +327,7 @@ class PasswordManager:
           for char, count in duplicateDict.items():
             bottomFinal *= self.calc_factorial(count)
 
-            
-          finalCalc = lenFactorial / bottomFinal
+          finalCalc = self.scramble_strength()
           formatted_number = f"{finalCalc:.0f}"
           print("Number of possible scrambles, with duplicates: " + str(formatted_number))
           prob = (1.0/float(formatted_number)) * 100
@@ -253,16 +335,17 @@ class PasswordManager:
 
         # Ask if the user wants to scramble the password.
         passwordList = list(self.password)
-        random.shuffle(passwordList) if input("Shuffle the password. (y/n)") == "y" else print("Declined Shuffle")
+        random.shuffle(passwordList) if input("Shuffle the password? (y/n)") == "y" else print("Declined Shuffle")
         self.password = "".join(passwordList)
-        print(self.password)
 
+    # Factorial Function. Returns an int.
     def calc_factorial(self, size):
         finalnumber = 1
         for i in range(size, 0, -1):
           finalnumber *= i
         return finalnumber 
 
+    # Function to count duplicates in a string of a password. Returns a dictionary.
     def calc_duplicates(self):
         sorted_string = ''.join(sorted(self.password))
 
@@ -293,15 +376,25 @@ class PasswordManager:
         # The length of the shortcut key is the number of 5-key combo presses, not the total number of keys involed.
         # Keys can appear in mulitple combo presses, but not twice in the same combo press.
         # length of 5. Can't repeat. 26(a-zA-z) + Special(8) + 10 (0-9)
-        # 44
         # 44!/(44-5)!
 
-        denominator = 44 - 5 
-        factorialNum = self.calc_factorial(44)
+        characterLength = 44
+        # Total Char set is 8 less
+        if self.requirements['special_char_allowed'] == False:
+
+            characterLength = 36
+        else:
+            charcterLength = 44
+
+        
+        denominator = characterLength - 5 
+        factorialNum = self.calc_factorial(characterLength)
         factorialDen = self.calc_factorial(denominator)
         validPass = factorialNum / factorialDen
         print("Number of possible valid shortcut keys given, duplicates not allowed: " + str(validPass))
-        print("Probability of Uniform Random Guess against the current: " + str(1.0/validPass))
+        print("Probability of Uniform Random Guess against the current: " + str((1.0/validPass) * 100) + "%")
+
+        return
 
     def session(self):
         if self.password == None:
@@ -326,7 +419,6 @@ class PasswordManager:
               "*) exit\n")
         option = input("Type 1-6 to proceed or anything else to exit: ")
 
-
         if option == "1":
             self.new_random_password()
         elif option == "2":
@@ -343,7 +435,6 @@ class PasswordManager:
             return
 
         self.session()
-        
 
 if __name__ == "__main__":
     pm = PasswordManager()
